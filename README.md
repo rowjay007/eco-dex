@@ -63,7 +63,7 @@ The platform consists of the following microservices:
    ```
 
 5. Access the services:
-   - API Gateway: http://localhost:80
+   - API Gateway: http://localhost:8080
    - Individual service endpoints are available at their respective ports
 
 ### Environment Variables
