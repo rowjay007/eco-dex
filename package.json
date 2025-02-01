@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "module-alias": "^2.2.3",
+    "zod": "^3.24.1"
+  }
+}
