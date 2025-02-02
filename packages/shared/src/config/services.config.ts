@@ -36,6 +36,11 @@ const servicesConfig: ServicesConfig = {
     timeout: 5000,
     retries: 3,
   },
+  user: {
+    url: process.env.USER_SERVICE_URL || "http://user-service:8086",
+    timeout: 5000,
+    retries: 3,
+  },
 };
 
 export default servicesConfig;
