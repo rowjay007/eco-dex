@@ -2,24 +2,19 @@ import cors from "cors";
 import { config } from "dotenv";
 import express, { NextFunction, Request, Response } from "express";
 import helmet from "helmet";
-import { AppError } from "./utils/AppError";
-import logger from "./utils/logger";
-
+import { AppError } from "./utils/AppError.js";
+import logger from "./utils/logger.js";
 
 config();
 
 const app = express();
 
-
 app.use(cors());
 app.use(helmet());
 app.use(express.json());
 
-
 app.use((err: Error, req: Request, res: Response, _next: NextFunction) => {
-
   logger.error("Error:", { error: err, path: req.path, method: req.method });
-
 
   if (err instanceof AppError) {
     return res.status(err.statusCode).json({
@@ -42,7 +37,6 @@ app.use((err: Error, req: Request, res: Response, _next: NextFunction) => {
     message,
   });
 });
-
 
 app.get("/health", (_req, res) => {
   res.status(200).json({ status: "ok" });

@@ -7,7 +7,7 @@ import {
   uuid,
   varchar,
 } from "drizzle-orm/pg-core";
-import { products } from "./product.model";
+import { products } from "./product.model.js";
 
 export const inventories = pgTable("inventories", {
   id: uuid("id").defaultRandom().primaryKey(),

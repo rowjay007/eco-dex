@@ -3,9 +3,10 @@
   "version": "1.0.0",
   "description": "Product management microservice for Eco-Dex platform",
   "main": "dist/app.js",
+  "type": "module",
   "scripts": {
     "start": "node dist/server.js",
-    "dev": "nodemon --watch 'src/**/*.ts' --exec 'ts-node' src/server.ts",
+    "dev": "nodemon --watch 'src/**/*.ts' --exec 'ts-node-esm' src/server.ts",
     "build": "tsc",
     "build:watch": "tsc --watch",
     "test": "jest",
