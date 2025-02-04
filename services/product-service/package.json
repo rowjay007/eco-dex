@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "start": "node dist/server.js",
-    "dev": "nodemon --watch 'src/**/*.ts' --exec 'ts-node-esm' src/server.ts",
+    "dev": "tsx watch src/server.ts",
     "build": "tsc",
     "build:watch": "tsc --watch",
     "test": "jest",
@@ -48,6 +48,7 @@
     "supertest": "^6.3.3",
     "ts-jest": "^29.1.0",
     "ts-node": "^10.9.1",
+    "tsx": "^4.7.0",
     "typescript": "^5.0.4"
   }
 }

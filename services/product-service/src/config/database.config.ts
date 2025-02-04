@@ -1,9 +1,9 @@
 import { config } from "dotenv";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
-import * as categorySchema from "../models/category.model.js";
-import * as inventorySchema from "../models/inventory.model.js";
-import * as productSchema from "../models/product.model.js";
+import * as categorySchema from "../models/category.model";
+import * as inventorySchema from "../models/inventory.model";
+import * as productSchema from "../models/product.model";
 
 config({ path: ".env" });
 

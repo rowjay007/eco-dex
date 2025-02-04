@@ -2,8 +2,10 @@ import cors from "cors";
 import { config } from "dotenv";
 import express, { NextFunction, Request, Response } from "express";
 import helmet from "helmet";
-import { AppError } from "./utils/AppError.js";
-import logger from "./utils/logger.js";
+import routes from "./routes/index";
+import { AppError } from "./utils/AppError";
+import logger from "./utils/logger";
+
 
 config();
 
@@ -12,6 +14,8 @@ const app = express();
 app.use(cors());
 app.use(helmet());
 app.use(express.json());
+
+app.use("/api", routes);
 
 app.use((err: Error, req: Request, res: Response, _next: NextFunction) => {
   logger.error("Error:", { error: err, path: req.path, method: req.method });
@@ -24,14 +28,14 @@ app.use((err: Error, req: Request, res: Response, _next: NextFunction) => {
     });
   }
 
-  // Handle other errors
+
   const statusCode = 500;
   const message =
     process.env.NODE_ENV === "development"
       ? err.message
       : "Internal server error";
 
-  // Send a generic error response
+
   return res.status(statusCode).json({
     success: false,
     message,

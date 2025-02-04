@@ -1,8 +1,8 @@
 import { config } from "dotenv";
-import app from "./app.js";
-import { db } from "./config/database.config.js";
-import { connectRedis } from "./config/redis.config.js";
-import logger from "./utils/logger.js";
+import app from "./app";
+import { db } from "./config/database.config";
+import { connectRedis } from "./config/redis.config";
+import logger from "./utils/logger";
 
 config();
 
