@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "start": "node dist/server.js",
-    "dev": "tsx watch src/server.ts",
+    "dev": "nodemon --watch 'src/**/*.ts' --exec 'tsx' src/server.ts",
     "build": "tsc",
     "build:watch": "tsc --watch",
     "test": "jest",
@@ -47,8 +47,8 @@
     "prettier": "^2.8.7",
     "supertest": "^6.3.3",
     "ts-jest": "^29.1.0",
-    "ts-node": "^10.9.1",
-    "tsx": "^4.7.0",
+    "ts-node": "^10.9.2",
+    "tsx": "^4.19.2",
     "typescript": "^5.0.4"
   }
 }

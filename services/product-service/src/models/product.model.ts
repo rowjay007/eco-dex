@@ -18,7 +18,9 @@ export const products = pgTable("products", {
   price: decimal("price", { precision: 10, scale: 2 }).notNull(),
   sku: varchar("sku", { length: 100 }).notNull().unique(),
   isActive: boolean("is_active").default(true).notNull(),
-  categoryId: uuid("category_id").notNull(),
+  categoryId: uuid("category_id")
+    .notNull()
+    .references(() => categories.id),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
