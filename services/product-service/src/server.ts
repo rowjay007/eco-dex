@@ -1,18 +1,24 @@
 import { config } from "dotenv";
 import app from "./app";
 import { db } from "./config/database.config";
-import { connectRedis } from "./config/redis.config";
+import { redisClient } from "./config/upstash.config";
 import logger from "./utils/logger";
 
 config();
 
 const startServer = async () => {
   try {
+    // Test database connection
     await db.execute("SELECT 1");
     logger.info("✅ Database connection successful");
 
-    await connectRedis();
-    logger.info("✅ Redis connection successful");
+    // Test Redis connection
+    try {
+      await redisClient.get("connection-test");
+      logger.info("✅ Redis connection successful");
+    } catch (error) {
+      logger.warn("⚠️ Redis connection failed - continuing without cache");
+    }
 
     const port = process.env.PORT || 3000;
     const server = app.listen(port, () => {
