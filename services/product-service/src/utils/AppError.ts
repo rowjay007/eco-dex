@@ -2,12 +2,12 @@ export class AppError extends Error {
   statusCode: number;
   status: string;
   isOperational: boolean;
-  errors?: Record<string, string>;
+  errors?: Record<string, string[] | string>;
 
   constructor(
     message: string,
     statusCode: number,
-    errors?: Record<string, string>
+    errors?: Record<string, string[] | string>
   ) {
     super(message);
 
