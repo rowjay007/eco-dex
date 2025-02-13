@@ -1,4 +1,4 @@
-import { relations, InferSelectModel, InferInsertModel } from "drizzle-orm";
+import { InferInsertModel, InferSelectModel, relations } from "drizzle-orm";
 import {
   boolean,
   pgTable,
@@ -26,12 +26,13 @@ export type CategoryInsert = InferInsertModel<typeof categories>;
 export const categoriesRelations = relations(categories, ({ many, one }) => ({
   products: many(products),
   parent: one(categories),
-  children: many(categories),
+  children: many(categories, {
+    relationName: "parent",
+  }),
 }));
-
 
 export interface Category extends CategorySelect {
   products?: InferSelectModel<typeof products>[];
-  parent?: CategorySelect;
+  parent?: CategorySelect | null;
   children?: CategorySelect[];
 }

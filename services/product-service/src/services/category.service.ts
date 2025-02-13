@@ -7,7 +7,6 @@ import type { Category } from "../models/category.model";
 import { categories } from "../models/category.model";
 import { AppError } from "../utils/AppError";
 
-// Validation schemas
 const categorySchema = z.object({
   name: z.string().min(1).max(255),
   description: z.string().optional(),
@@ -17,7 +16,6 @@ const categorySchema = z.object({
 
 type ValidatedCategory = z.infer<typeof categorySchema>;
 
-// Helper functions
 const formatZodError = (error: z.ZodError) => {
   const { fieldErrors } = error.flatten();
   const formattedErrors: Record<string, string> = {};
@@ -42,7 +40,6 @@ const validateInput = (data: unknown): ValidatedCategory => {
     );
   }
 };
-
 
 const generateSlug = (name: string): string =>
   slugify(name, { lower: true, strict: true, trim: true });
@@ -76,12 +73,10 @@ const updateCache = async (category: Category): Promise<void> => {
       cacheService.del(cacheService.generateCategoryListKey()),
     ]);
   } catch (error) {
-    // Log error but don't fail the operation
     console.warn("Cache update failed:", error);
   }
 };
 
-// Main functions
 export const createCategory = async (data: unknown): Promise<Category> => {
   const validated = validateInput(data);
   const slug = generateSlug(validated.name);
@@ -165,11 +160,11 @@ export const updateCategory = async (
 export const deleteCategory = async (id: string): Promise<void> => {
   const category = await getCategory(id);
 
-  if (category.children?.length > 0) {
+  if (category.children && category.children.length > 0) {
     throw new AppError("Cannot delete category with subcategories", 400);
   }
 
-  if (category.products?.length > 0) {
+  if (category.products && category.products.length > 0) {
     throw new AppError("Cannot delete category with associated products", 400);
   }
 
