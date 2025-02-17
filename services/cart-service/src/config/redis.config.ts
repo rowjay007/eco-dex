@@ -1,4 +1,3 @@
-// redis.config.ts
 import { Redis } from "@upstash/redis";
 import { config } from "dotenv";
 import logger from "../utils/logger";
