@@ -63,4 +63,3 @@ const redisClient = {
 export { redisClient };
 export default redisClient;
 
-// redis.service.ts
