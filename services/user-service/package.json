@@ -5,6 +5,7 @@
   "main": "dist/app.js",
   "scripts": {
     "start": "node dist/server.js",
+    "drizzle:setup": "npx drizzle-kit generate && npx drizzle-kit migrate && npx drizzle-kit push && npx drizzle-kit pull && npx drizzle-kit check && npx drizzle-kit up && npx drizzle-kit studio",
     "dev": "nodemon --watch 'src/**/*.ts' --exec 'ts-node' src/server.ts",
     "build": "tsc",
     "build:watch": "tsc --watch",
