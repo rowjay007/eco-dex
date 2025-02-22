@@ -1,5 +1,3 @@
-# Order Service Makefile
-
 .PHONY: install build start dev clean test lint
 
 install:

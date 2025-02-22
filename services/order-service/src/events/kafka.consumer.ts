@@ -12,12 +12,10 @@ export const CONSUMER_TOPICS = {
 
 export const setupConsumers = async () => {
   try {
-    // Subscribe to payment-related topics
     await consumer.subscribe({
       topics: [CONSUMER_TOPICS.PAYMENT_COMPLETED, CONSUMER_TOPICS.PAYMENT_FAILED],
     });
 
-    // Subscribe to inventory-related topics
     await consumer.subscribe({
       topics: [CONSUMER_TOPICS.INVENTORY_RESERVED, CONSUMER_TOPICS.INVENTORY_RELEASED],
     });
