@@ -1,11 +1,10 @@
 ### Initiate Payment with Paystack
-POST http://localhost:3005/api/payments/initiate
+POST http://localhost:3005/api/v1/payments/paystack/initiate
 Content-Type: application/json
 
 {
   "amount": 5000,
   "email": "customer@example.com",
-  "provider": "paystack",
   "currency": "NGN",
   "callbackUrl": "http://localhost:3000/payment/callback",
   "metadata": {
@@ -15,22 +14,20 @@ Content-Type: application/json
 }
 
 ### Verify Payment with Paystack
-POST http://localhost:3005/api/payments/verify
+POST http://localhost:3005/api/v1/payments/paystack/verify
 Content-Type: application/json
 
 {
-  "reference": "YOUR_PAYMENT_REFERENCE",
-  "provider": "paystack"
+  "reference": "YOUR_PAYMENT_REFERENCE"
 }
 
 ### Initiate Payment with Flutterwave
-POST http://localhost:3005/api/payments/initiate
+POST http://localhost:3005/api/v1/payments/flutterwave/initiate
 Content-Type: application/json
 
 {
   "amount": 5000,
   "email": "customer@example.com",
-  "provider": "flutterwave",
   "currency": "NGN",
   "callbackUrl": "http://localhost:3000/payment/callback",
   "metadata": {
@@ -40,10 +37,9 @@ Content-Type: application/json
 }
 
 ### Verify Payment with Flutterwave
-POST http://localhost:3005/api/payments/verify
+POST http://localhost:3005/api/v1/payments/flutterwave/verify
 Content-Type: application/json
 
 {
-  "reference": "YOUR_PAYMENT_REFERENCE",
-  "provider": "flutterwave"
+  "reference": "YOUR_PAYMENT_REFERENCE"
 }
