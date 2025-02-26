@@ -1,0 +1,49 @@
+### Initiate Payment with Paystack
+POST http://localhost:3005/api/payments/initiate
+Content-Type: application/json
+
+{
+  "amount": 5000,
+  "email": "customer@example.com",
+  "provider": "paystack",
+  "currency": "NGN",
+  "callbackUrl": "http://localhost:3000/payment/callback",
+  "metadata": {
+    "orderId": "12345",
+    "customerId": "67890"
+  }
+}
+
+### Verify Payment with Paystack
+POST http://localhost:3005/api/payments/verify
+Content-Type: application/json
+
+{
+  "reference": "YOUR_PAYMENT_REFERENCE",
+  "provider": "paystack"
+}
+
+### Initiate Payment with Flutterwave
+POST http://localhost:3005/api/payments/initiate
+Content-Type: application/json
+
+{
+  "amount": 5000,
+  "email": "customer@example.com",
+  "provider": "flutterwave",
+  "currency": "NGN",
+  "callbackUrl": "http://localhost:3000/payment/callback",
+  "metadata": {
+    "orderId": "12345",
+    "customerId": "67890"
+  }
+}
+
+### Verify Payment with Flutterwave
+POST http://localhost:3005/api/payments/verify
+Content-Type: application/json
+
+{
+  "reference": "YOUR_PAYMENT_REFERENCE",
+  "provider": "flutterwave"
+}

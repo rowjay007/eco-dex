@@ -1,71 +1,62 @@
-import express, { Request, Response, NextFunction } from 'express';
-import cors from 'cors';
-import { json } from 'express';
-import winston from 'winston';
+import compression from "compression";
+import cors from "cors";
+import express, { NextFunction, Request, Response } from "express";
+import RateLimit from "express-rate-limit";
+import helmet from "helmet";
+import pinoHttp from "pino-http";
+import { config } from "./config/app.config";
+import { logger } from "./config/logger.config";
+import { requestId } from "./middleware/request-id.middleware";
+import routes from "./routes";
 
-import paymentRoutes from './routes/payment.routes';
-import webhookRoutes from './routes/webhook.routes';
-import { appConfig } from './config/app.config';
-
-// Configure logger
-const logger = winston.createLogger({
-  level: 'info',
-  format: winston.format.combine(
-    winston.format.timestamp(),
-    winston.format.json()
-  ),
-  transports: [
-    new winston.transports.Console(),
-    new winston.transports.File({ filename: 'error.log', level: 'error' }),
-    new winston.transports.File({ filename: 'combined.log' })
-  ]
-});
-
-// Create Express app
 const app = express();
 
-// Middleware
+app.use(helmet());
 app.use(cors());
-app.use(json());
+app.use(requestId);
 
-// Request logging middleware
-app.use((req: Request, _res: Response, next: NextFunction) => {
-  logger.info(`${req.method} ${req.path}`, {
-    query: req.query,
-    body: req.body,
-    headers: req.headers
+const limiter = RateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+app.use(limiter);
+
+app.use(express.json({ limit: "10kb" }));
+app.use(express.urlencoded({ extended: true }));
+
+app.use(compression());
+
+app.use(
+  pinoHttp({
+    logger,
+    autoLogging: {
+      ignore: (req) => req.url === "/health",
+    },
+    customProps: (req) => ({
+      context: "http",
+      "request-id": req.id,
+    }),
+  })
+);
+
+app.use("/api", routes);
+
+app.use((req: Request, res: Response) => {
+  res.status(404).json({
+    status: "error",
+    message: `Cannot ${req.method} ${req.url}`,
   });
-  next();
 });
 
-// Routes
-app.use('/api/payments', paymentRoutes);
-app.use('/api/webhooks', webhookRoutes);
-
-// Health check endpoint
-app.get('/health', (_req: Request, res: Response) => {
-  res.status(200).json({ status: 'healthy' });
-});
-
-// Error handling middleware
-app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
-  logger.error('Unhandled error:', { error: err });
+app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
+  logger.error("🔥 Unhandled error:", { error: err, path: req.path });
   res.status(500).json({
-    success: false,
-    message: 'Internal server error',
-    error: {
-      code: 'INTERNAL_SERVER_ERROR',
-      message: appConfig.env === 'development' ? err.message : 'An unexpected error occurred'
-    }
+    status: "error",
+    message:
+      config.NODE_ENV === "production" ? "Internal server error" : err.message,
   });
 });
 
-// Start server
-if (require.main === module) {
-  const port = appConfig.port;
-  app.listen(port, () => {
-    logger.info(`Payment service listening on port ${port}`);
-  });
-}
-
-export default app;
+export { app };

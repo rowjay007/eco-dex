@@ -1,52 +1,28 @@
-import { config } from 'dotenv';
 import { z } from 'zod';
+import * as dotenv from 'dotenv';
 
-// Load environment variables
-config();
+dotenv.config();
 
-// Define the environment schema
+export type NodeEnv = 'development' | 'production' | 'test';
+
+export const isDevelopment = (env: NodeEnv): env is 'development' => env === 'development';
+export const isProduction = (env: NodeEnv): env is 'production' => env === 'production';
+export const isTest = (env: NodeEnv): env is 'test' => env === 'test';
+
 const envSchema = z.object({
-  NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
-  PORT: z.string().default('3005'),
-  DB_HOST: z.string(),
-  DB_PORT: z.string().default('5432'),
-  DB_USER: z.string(),
-  DB_PASSWORD: z.string(),
-  DB_NAME: z.string(),
-  KAFKA_BROKERS: z.string().optional(),
+  NODE_ENV: z.enum(['development', 'production', 'test'] as const).default('development'),
+  PORT: z.string().transform(Number).default('3005'),
+  SERVICE_NAME: z.string().default('payment-service'),
+  LOG_LEVEL: z.string().default('info'),
+  DATABASE_URL: z.string(),
+  UPSTASH_REDIS_REST_URL: z.string(),
+  UPSTASH_REDIS_REST_TOKEN: z.string(),
   PAYSTACK_SECRET_KEY: z.string(),
   PAYSTACK_PUBLIC_KEY: z.string(),
   FLUTTERWAVE_SECRET_KEY: z.string(),
   FLUTTERWAVE_PUBLIC_KEY: z.string(),
-  WEBHOOK_SECRET: z.string()
 });
 
-// Parse and validate environment variables
-const env = envSchema.parse(process.env);
+export const config = envSchema.parse(process.env);
 
-// Export configuration object
-export const appConfig = {
-  env: env.NODE_ENV,
-  port: parseInt(env.PORT, 10),
-  db: {
-    host: env.DB_HOST,
-    port: parseInt(env.DB_PORT, 10),
-    user: env.DB_USER,
-    password: env.DB_PASSWORD,
-    database: env.DB_NAME
-  },
-  kafka: {
-    brokers: env.KAFKA_BROKERS?.split(',') || []
-  },
-  paystack: {
-    secretKey: env.PAYSTACK_SECRET_KEY,
-    publicKey: env.PAYSTACK_PUBLIC_KEY
-  },
-  flutterwave: {
-    secretKey: env.FLUTTERWAVE_SECRET_KEY,
-    publicKey: env.FLUTTERWAVE_PUBLIC_KEY
-  },
-  webhook: {
-    secret: env.WEBHOOK_SECRET
-  }
-};
+export type Config = z.infer<typeof envSchema>;

@@ -1,131 +1,104 @@
-import axios from 'axios';
-import { PaymentGateway, PaymentInitializeParams, PaymentInitializeResult, PaymentVerificationResult, WebhookResult } from '../types';
-import { PaymentProvider, PaymentStatus, CurrencyCode } from '../config/payment.config';
-import { appConfig } from '../config/app.config';
+import axios from "axios";
+import { config } from "../config/app.config";
+import { logger } from "../config/logger.config";
 
-export class FlutterwaveProvider implements PaymentGateway {
+const FLUTTERWAVE_BASE_URL = "https://api.flutterwave.com/v3";
+
+export class FlutterwaveProvider {
   private readonly secretKey: string;
-  private readonly baseUrl = 'https://api.flutterwave.com/v3';
+  private readonly publicKey: string;
 
   constructor() {
-    this.secretKey = appConfig.flutterwave.secretKey;
+    this.secretKey = config.FLUTTERWAVE_SECRET_KEY;
+    this.publicKey = config.FLUTTERWAVE_PUBLIC_KEY;
   }
 
-  private getHeaders() {
+  private get headers() {
     return {
       Authorization: `Bearer ${this.secretKey}`,
-      'Content-Type': 'application/json'
+      "Content-Type": "application/json",
     };
   }
 
-  async initialize(params: PaymentInitializeParams): Promise<PaymentInitializeResult> {
+  async initializePayment(params: {
+    tx_ref: string;
+    amount: number;
+    currency: string;
+    redirect_url: string;
+    customer: {
+      email: string;
+      name?: string;
+      phonenumber?: string;
+    };
+    meta?: Record<string, any>;
+  }) {
+    logger.info({ params }, "Initializing Flutterwave payment");
     try {
       const response = await axios.post(
-        `${this.baseUrl}/payments`,
-        {
-          tx_ref: params.reference,
-          amount: params.amount,
-          currency: params.currency,
-          redirect_url: params.callbackUrl,
-          customer: {
-            email: params.email
-          },
-          meta: {
-            ...params.metadata,
-            provider: PaymentProvider.FLUTTERWAVE
-          },
-          payment_options: 'card,banktransfer,ussd'
-        },
-        { headers: this.getHeaders() }
+        `${FLUTTERWAVE_BASE_URL}/payments`,
+        params,
+        { headers: this.headers }
       );
-
-      return {
-        success: true,
-        reference: params.reference,
-        authorizationUrl: response.data.data.link,
-        providerReference: response.data.data.id.toString()
-      };
-    } catch (error: any) {
-      return {
-        success: false,
-        reference: params.reference,
-        error: {
-          code: 'FLUTTERWAVE_INITIALIZATION_ERROR',
-          message: error.response?.data?.message || 'Failed to initialize payment'
-        }
-      };
+      logger.info(
+        { tx_ref: params.tx_ref },
+        "Flutterwave payment initialized successfully"
+      );
+      return response.data;
+    } catch (error) {
+      logger.error(
+        { error, params },
+        "Failed to initialize Flutterwave payment"
+      );
+      throw this.handleError(error);
     }
   }
 
-  async verify(reference: string): Promise<PaymentVerificationResult> {
+  async verifyTransaction(transactionId: string) {
+    logger.info({ transactionId }, "Verifying Flutterwave transaction");
     try {
       const response = await axios.get(
-        `${this.baseUrl}/transactions/verify_by_reference?tx_ref=${reference}`,
-        { headers: this.getHeaders() }
+        `${FLUTTERWAVE_BASE_URL}/transactions/${transactionId}/verify`,
+        { headers: this.headers }
       );
-
-      const { data } = response.data;
-      const status = this.mapFlutterwaveStatus(data.status);
-
-      return {
-        success: true,
-        reference,
-        providerReference: data.id.toString(),
-        status,
-        amount: data.amount,
-        currency: data.currency as CurrencyCode,
-        metadata: data.meta
-      };
-    } catch (error: any) {
-      return {
-        success: false,
-        reference,
-        status: PaymentStatus.FAILED,
-        amount: 0,
-        currency: CurrencyCode.NGN,
-        error: {
-          code: 'FLUTTERWAVE_VERIFICATION_ERROR',
-          message: error.response?.data?.message || 'Failed to verify payment'
-        }
-      };
+      logger.info(
+        { transactionId, status: response.data.status },
+        "Flutterwave transaction verified"
+      );
+      return response.data;
+    } catch (error) {
+      logger.error(
+        { error, transactionId },
+        "Failed to verify Flutterwave transaction"
+      );
+      throw this.handleError(error);
     }
   }
 
-  async handleWebhook(payload: any): Promise<WebhookResult> {
+  async initiateRefund(params: { transaction_id: string; amount?: number }) {
+    logger.info({ params }, "Initiating Flutterwave refund");
     try {
-      const data = payload.data;
-      const reference = data.tx_ref;
-      const status = this.mapFlutterwaveStatus(data.status);
-
-      return {
-        success: true,
-        reference,
-        providerReference: data.id.toString(),
-        status
-      };
-    } catch (error: any) {
-      return {
-        success: false,
-        reference: payload?.data?.tx_ref || 'UNKNOWN',
-        status: PaymentStatus.FAILED,
-        error: {
-          code: 'FLUTTERWAVE_WEBHOOK_ERROR',
-          message: 'Failed to process webhook payload'
-        }
-      };
+      const response = await axios.post(
+        `${FLUTTERWAVE_BASE_URL}/transactions/${params.transaction_id}/refund`,
+        { amount: params.amount },
+        { headers: this.headers }
+      );
+      logger.info(
+        { transactionId: params.transaction_id },
+        "Flutterwave refund initiated successfully"
+      );
+      return response.data;
+    } catch (error) {
+      logger.error({ error, params }, "Failed to initiate Flutterwave refund");
+      throw this.handleError(error);
     }
   }
 
-  private mapFlutterwaveStatus(flwStatus: string): PaymentStatus {
-    switch (flwStatus.toLowerCase()) {
-      case 'successful':
-        return PaymentStatus.SUCCESS;
-      case 'failed':
-        return PaymentStatus.FAILED;
-      case 'cancelled':
-        return PaymentStatus.CANCELLED;
-      default:
-        return PaymentStatus.PENDING;
+  private handleError(error: any) {
+    if (axios.isAxiosError(error)) {
+      return new Error(
+        error.response?.data?.message || "An error occurred with Flutterwave"
+      );
     }
+    return error;
   }
 }

@@ -1,174 +1,149 @@
-import { v4 as uuidv4 } from 'uuid';
-import { PaymentGateway, PaymentInitializeParams, Transaction } from '../types';
-import { TransactionService } from './transaction.service';
-import { PaymentProvider, PaymentStatus, PaymentResponse, paymentConfig } from '../config/payment.config';
 import { PaystackProvider } from '../providers/paystack.provider';
 import { FlutterwaveProvider } from '../providers/flutterwave.provider';
+import { redis } from '../config/redis.config';
+import { producer, PAYMENT_TOPICS } from '../config/kafka.config';
+import { logger } from '../config/logger.config';
+
+export type PaymentProvider = 'paystack' | 'flutterwave';
+
+export interface InitiatePaymentParams {
+  amount: number;
+  email: string;
+  provider: PaymentProvider;
+  currency?: string;
+  reference?: string;
+  callbackUrl?: string;
+  metadata?: Record<string, any>;
+}
 
 export class PaymentService {
-  private readonly transactionService: TransactionService;
-  private readonly providers: Map<PaymentProvider, PaymentGateway>;
+  private readonly paystackProvider: PaystackProvider;
+  private readonly flutterwaveProvider: FlutterwaveProvider;
 
   constructor() {
-    this.transactionService = new TransactionService();
-    this.providers = new Map([
-      [PaymentProvider.PAYSTACK, new PaystackProvider()],
-      [PaymentProvider.FLUTTERWAVE, new FlutterwaveProvider()]
-    ]);
+    this.paystackProvider = new PaystackProvider();
+    this.flutterwaveProvider = new FlutterwaveProvider();
   }
 
-  async initializePayment(
-    params: Omit<PaymentInitializeParams, 'reference'>,
-    provider: PaymentProvider = paymentConfig.defaultProvider
-  ): Promise<PaymentResponse> {
+  async initiatePayment(params: InitiatePaymentParams) {
+    logger.info({ params }, 'Initiating payment');
     try {
-      const paymentProvider = this.providers.get(provider);
-      if (!paymentProvider) {
-        throw new Error(`Payment provider ${provider} not supported`);
+      const { provider, ...paymentParams } = params;
+      let result;
+
+      if (provider === 'paystack') {
+        result = await this.paystackProvider.initializeTransaction({
+          email: paymentParams.email,
+          amount: paymentParams.amount,
+          reference: paymentParams.reference,
+          callbackUrl: paymentParams.callbackUrl,
+        });
+      } else {
+        result = await this.flutterwaveProvider.initializePayment({
+          tx_ref: paymentParams.reference || String(Date.now()),
+          amount: paymentParams.amount,
+          currency: paymentParams.currency || 'NGN',
+          redirect_url: paymentParams.callbackUrl || '',
+          customer: {
+            email: paymentParams.email,
+          },
+          meta: paymentParams.metadata,
+        });
       }
 
-      const reference = uuidv4();
-      const initializeResult = await paymentProvider.initialize({
-        ...params,
-        reference
+      const paymentReference = result.data.reference || result.data.tx_ref;
+      logger.info({ paymentReference }, 'Payment initialized successfully');
+
+      await redis.set(
+        `payment:${paymentReference}`,
+        JSON.stringify({
+          ...paymentParams,
+          provider,
+          status: 'pending',
+          createdAt: new Date().toISOString(),
+        }),
+        { ex: 24 * 60 * 60 } 
+      );
+      logger.debug({ paymentReference }, 'Payment details cached');
+
+      await producer.send({
+        topic: PAYMENT_TOPICS.PAYMENT_CREATED,
+        messages: [{
+          key: paymentReference,
+          value: JSON.stringify({
+            ...paymentParams,
+            provider,
+            status: 'pending',
+          }),
+        }],
       });
+      logger.debug({ paymentReference }, 'Payment created event emitted');
 
-      if (!initializeResult.success) {
-        return {
-          success: false,
-          message: 'Payment initialization failed',
-          error: initializeResult.error
-        };
-      }
-
-      // Create transaction record
-      await this.transactionService.createTransaction({
-        reference,
-        providerReference: initializeResult.providerReference,
-        provider,
-        amount: params.amount,
-        currency: params.currency,
-        status: PaymentStatus.PENDING,
-        email: params.email,
-        metadata: params.metadata,
-        callbackUrl: params.callbackUrl
-      });
-
-      return {
-        success: true,
-        message: 'Payment initialized successfully',
-        data: {
-          reference,
-          authorizationUrl: initializeResult.authorizationUrl,
-          accessCode: initializeResult.accessCode,
-          providerReference: initializeResult.providerReference,
-          status: PaymentStatus.PENDING
-        }
-      };
-    } catch (error: any) {
-      return {
-        success: false,
-        message: 'Failed to initialize payment',
-        error: {
-          code: 'PAYMENT_INITIALIZATION_ERROR',
-          message: error.message
-        }
-      };
+      return result;
+    } catch (error) {
+      logger.error({ error, params }, 'Failed to initiate payment');
+      throw error;
     }
   }
 
-  async verifyPayment(reference: string): Promise<PaymentResponse> {
+  async verifyPayment(reference: string, provider: PaymentProvider) {
+    logger.info({ reference, provider }, 'Verifying payment');
     try {
-      const transaction = await this.transactionService.getTransactionByReference(reference);
-      if (!transaction) {
-        throw new Error(`Transaction with reference ${reference} not found`);
+      let verificationResult;
+
+      if (provider === 'paystack') {
+        verificationResult = await this.paystackProvider.verifyTransaction(reference);
+      } else {
+        verificationResult = await this.flutterwaveProvider.verifyTransaction(reference);
       }
 
-      const paymentProvider = this.providers.get(transaction.provider);
-      if (!paymentProvider) {
-        throw new Error(`Payment provider ${transaction.provider} not supported`);
-      }
+      const status = this.normalizeTransactionStatus(verificationResult, provider);
+      logger.info({ reference, status }, 'Payment verification status determined');
 
-      const verificationResult = await paymentProvider.verify(reference);
+      const topic = status === 'success' 
+        ? PAYMENT_TOPICS.PAYMENT_COMPLETED 
+        : PAYMENT_TOPICS.PAYMENT_FAILED;
 
-      if (!verificationResult.success) {
-        return {
-          success: false,
-          message: 'Payment verification failed',
-          error: verificationResult.error
-        };
-      }
-
-      // Update transaction status
-      const updatedTransaction = await this.transactionService.updateTransactionStatus(
-        reference,
-        verificationResult.status,
-        verificationResult.providerReference
+      await redis.set(
+        `payment:${reference}`,
+        JSON.stringify({
+          ...verificationResult.data,
+          status,
+          updatedAt: new Date().toISOString(),
+        }),
+        { ex: 24 * 60 * 60 }
       );
+      logger.debug({ reference }, 'Payment cache updated');
 
-      return {
-        success: true,
-        message: 'Payment verified successfully',
-        data: {
-          reference: updatedTransaction.reference,
-          providerReference: updatedTransaction.providerReference,
-          status: updatedTransaction.status
-        }
-      };
-    } catch (error: any) {
-      return {
-        success: false,
-        message: 'Failed to verify payment',
-        error: {
-          code: 'PAYMENT_VERIFICATION_ERROR',
-          message: error.message
-        }
-      };
+      await producer.send({
+        topic,
+        messages: [{
+          key: reference,
+          value: JSON.stringify({
+            reference,
+            provider,
+            status,
+            data: verificationResult.data,
+          }),
+        }],
+      });
+      logger.debug({ reference, topic }, 'Payment status event emitted');
+
+      return verificationResult;
+    } catch (error) {
+      logger.error({ error, reference, provider }, 'Failed to verify payment');
+      throw error;
     }
   }
 
-  async handleWebhook(provider: PaymentProvider, payload: any): Promise<PaymentResponse> {
-    try {
-      const paymentProvider = this.providers.get(provider);
-      if (!paymentProvider) {
-        throw new Error(`Payment provider ${provider} not supported`);
-      }
-
-      const webhookResult = await paymentProvider.handleWebhook(payload);
-
-      if (!webhookResult.success) {
-        return {
-          success: false,
-          message: 'Webhook processing failed',
-          error: webhookResult.error
-        };
-      }
-
-      // Update transaction status
-      const updatedTransaction = await this.transactionService.updateTransactionStatus(
-        webhookResult.reference,
-        webhookResult.status,
-        webhookResult.providerReference
-      );
-
-      return {
-        success: true,
-        message: 'Webhook processed successfully',
-        data: {
-          reference: updatedTransaction.reference,
-          providerReference: updatedTransaction.providerReference,
-          status: updatedTransaction.status
-        }
-      };
-    } catch (error: any) {
-      return {
-        success: false,
-        message: 'Failed to process webhook',
-        error: {
-          code: 'WEBHOOK_PROCESSING_ERROR',
-          message: error.message
-        }
-      };
+  private normalizeTransactionStatus(
+    result: any,
+    provider: PaymentProvider
+  ): 'success' | 'failed' | 'pending' {
+    if (provider === 'paystack') {
+      return result.data.status === 'success' ? 'success' : 'failed';
+    } else {
+      return result.data.status === 'successful' ? 'success' : 'failed';
     }
   }
 }

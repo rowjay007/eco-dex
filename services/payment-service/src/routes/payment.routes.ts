@@ -1,16 +1,17 @@
-import { Router } from 'express';
-import { PaymentController } from '../controllers/payment.controller';
+import { Router } from "express";
+import {
+  initiateFlutterwavePayment,
+  initiatePaystackPayment,
+  verifyFlutterwavePayment,
+  verifyPaystackPayment,
+} from "../controllers/payment.controller";
 
 const router = Router();
-const paymentController = new PaymentController();
 
-// Initialize payment
-router.post('/initialize', (req, res) => paymentController.initializePayment(req, res));
+router.post("/paystack/initiate", initiatePaystackPayment);
+router.post("/paystack/verify", verifyPaystackPayment);
 
-// Verify payment
-router.get('/verify/:reference', (req, res) => paymentController.verifyPayment(req, res));
-
-// Get supported currencies
-router.get('/currencies', (req, res) => paymentController.getSupportedCurrencies(req, res));
+router.post("/flutterwave/initiate", initiateFlutterwavePayment);
+router.post("/flutterwave/verify", verifyFlutterwavePayment);
 
 export default router;
