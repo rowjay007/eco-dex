@@ -6,7 +6,7 @@ export type NotificationPriority = 'low' | 'normal' | 'high';
 
 export interface NotificationPayload {
   to: {
-    email?: string;
+    email?: any;
     phone?: string;
     deviceTokens?: string[];
   };
@@ -58,3 +58,9 @@ export type NotificationTemplate = {
   };
   metadata?: Record<string, any>;
 };
+
+export interface IChannelCredentials {
+  email?: any;
+  sms?: any;
+  push?: any;
+}

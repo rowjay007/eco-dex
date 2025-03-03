@@ -1,12 +1,11 @@
-import { Novu } from '@novu/node';
-import { appConfig } from '../config/app.config';
-import { logger } from '../config/logger.config';
-import { NotificationPayload, NotificationResult } from '../types';
-import { BaseNotificationProvider } from './base.provider';
-import { novuClient } from '../config/novu.config';
+import { appConfig } from "../config/app.config";
+import { logger } from "../config/logger.config";
+import { novuClient } from "../config/novu.config";
+import { NotificationPayload, NotificationResult } from "../types";
+import { BaseNotificationProvider } from "./base.provider";
 
 export class EmailProvider extends BaseNotificationProvider {
-  channel = 'email' as const;
+  channel = "email" as const;
 
   async send(payload: NotificationPayload): Promise<NotificationResult> {
     try {
@@ -25,7 +24,7 @@ export class EmailProvider extends BaseNotificationProvider {
 
       logger.info(
         { templateId: payload.templateId, channel: this.channel },
-        'Email notification sent successfully'
+        "Email notification sent successfully"
       );
 
       return {
@@ -37,7 +36,7 @@ export class EmailProvider extends BaseNotificationProvider {
     } catch (error) {
       logger.error(
         { error, templateId: payload.templateId, channel: this.channel },
-        'Failed to send email notification'
+        "Failed to send email notification"
       );
       return this.handleError(error, payload);
     }
