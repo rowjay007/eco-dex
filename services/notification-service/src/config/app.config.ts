@@ -39,7 +39,7 @@ const getAppConfig = (): AppConfig => {
     nodeEnv: process.env.NODE_ENV || 'development',
     logLevel: process.env.LOG_LEVEL || 'info',
     kafka: {
-      brokers: (process.env.KAFKA_BROKERS || 'localhost:9092').split(','),
+      brokers: (process.env.KAFKA_BROKERS || 'kafka:9092').split(','),
       topics: {
         notifications: process.env.KAFKA_NOTIFICATIONS_TOPIC || 'notifications'
       }

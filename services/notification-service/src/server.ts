@@ -1,9 +1,10 @@
+import { KafkaNotificationEvent } from './types/index.d';
 import { Redis } from "@upstash/redis";
 import { createServer, Server as HttpServer } from "http";
 import { Kafka, Consumer } from "kafkajs";
 
 import { NotificationProviderFactory } from "./providers";
-import { KafkaNotificationEvent } from "./types";
+
 import app from "./app";
 import { appConfig } from "./config/app.config";
 import { logger } from "./config/logger.config";
@@ -44,6 +45,24 @@ class NotificationServer {
 
   private handleUnhandledRejection(reason: any): void {
     logger.error("⚠️ Unhandled Rejection:", { reason });
+  }
+
+  private async connectToKafka(retries = 5, retryDelay = 5000): Promise<void> {
+    for (let attempt = 1; attempt <= retries; attempt++) {
+      try {
+        this.consumer = this.kafka.consumer({ groupId: appConfig.kafka.topics.notifications });
+        await this.consumer.connect();
+        await this.consumer.subscribe({ topics: [appConfig.kafka.topics.notifications] });
+        logger.info('✅ Successfully connected to Kafka');
+        return;
+      } catch (error) {
+        logger.error(`Failed to connect to Kafka (Attempt ${attempt}/${retries}):`, { error });
+        if (attempt === retries) {
+          throw new Error('Failed to connect to Kafka after multiple attempts');
+        }
+        await new Promise(resolve => setTimeout(resolve, retryDelay));
+      }
+    }
   }
 
   async start() {
@@ -90,9 +109,9 @@ class NotificationServer {
   private async connectKafka() {
     try {
       this.consumer = this.kafka.consumer({
-        groupId: "notification-service-group",
+        groupId: appConfig.kafka.topics.notifications,
       });
-      await this.consumer.connect();
+      await this.connectToKafka();
       logger.info("✅ Kafka connected");
     } catch (error) {
       logger.error("💥 Failed to connect to Kafka", { error });
