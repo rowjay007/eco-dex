@@ -50,10 +50,7 @@ resource "azurerm_monitor_diagnostic_setting" "aks" {
       category = log.value
       enabled  = true
 
-      retention_policy {
-        enabled = true
-        days    = var.retention_days
-      }
+
     }
   }
 
@@ -61,10 +58,7 @@ resource "azurerm_monitor_diagnostic_setting" "aks" {
     category = "AllMetrics"
     enabled  = true
 
-    retention_policy {
-      enabled = true
-      days    = var.retention_days
-    }
+
   }
 }
 
@@ -79,10 +73,7 @@ resource "azurerm_monitor_diagnostic_setting" "postgresql" {
       category = log.value
       enabled  = true
 
-      retention_policy {
-        enabled = true
-        days    = var.retention_days
-      }
+
     }
   }
 
@@ -90,9 +81,6 @@ resource "azurerm_monitor_diagnostic_setting" "postgresql" {
     category = "AllMetrics"
     enabled  = true
 
-    retention_policy {
-      enabled = true
-      days    = var.retention_days
-    }
+
   }
 }
