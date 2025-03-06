@@ -14,13 +14,12 @@ resource "azurerm_kubernetes_cluster" "aks" {
   kubernetes_version  = var.kubernetes_version
 
   default_node_pool {
-    name                = "default"
-    node_count          = var.node_count
-    vm_size             = var.vm_size
-    enable_auto_scaling = true
-    min_count           = var.min_node_count
-    max_count           = var.max_node_count
-    vnet_subnet_id      = var.subnet_id
+    name       = "default"
+    node_count = var.node_count
+    vm_size    = var.vm_size
+    min_count  = var.min_node_count
+    max_count  = var.max_node_count
+    vnet_subnet_id = var.subnet_id
   }
 
   identity {
@@ -36,7 +35,6 @@ resource "azurerm_kubernetes_cluster" "aks" {
   role_based_access_control_enabled = true
 
   azure_active_directory_role_based_access_control {
-    managed                = true
     azure_rbac_enabled     = true
     admin_group_object_ids = var.admin_group_object_ids
   }
