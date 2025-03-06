@@ -1,0 +1,40 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: ecodex
+
+bases:
+  - ../../base
+
+resources:
+  - ingress.yaml
+  - secrets.yaml
+
+patchesStrategicMerge:
+  - patches/product-service-patch.yaml
+  - patches/order-service-patch.yaml
+  - patches/payment-service-patch.yaml
+
+configMapGenerator:
+  - name: product-service-config
+    behavior: merge
+    literals:
+      - LOG_LEVEL=debug
+  - name: order-service-config
+    behavior: merge
+    literals:
+      - LOG_LEVEL=debug
+      - ORDER_EXPIRATION_MINUTES=45
+  - name: payment-service-config
+    behavior: merge
+    literals:
+      - LOG_LEVEL=debug
+      - PAYMENT_PROCESSING_TIMEOUT=45
+
+images:
+  - name: ecodex/product-service
+    newTag: v1.0.0
+  - name: ecodex/order-service
+    newTag: v1.0.0
+  - name: ecodex/payment-service
+    newTag: v1.0.0
