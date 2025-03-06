@@ -1,0 +1,36 @@
+# Kibana Configuration
+server.name: kibana
+server.host: 0.0.0.0
+server.port: 5601
+
+# Elasticsearch
+elasticsearch.hosts: ["http://elasticsearch:9200"]
+elasticsearch.username: kibana_system
+elasticsearch.password: ${KIBANA_SYSTEM_PASSWORD}
+
+# Security
+xpack.security.enabled: true
+xpack.encryptedSavedObjects.encryptionKey: ${ENCRYPTION_KEY}
+
+# Monitoring
+monitoring.ui.container.elasticsearch.enabled: true
+
+# Logging
+logging.root.level: info
+
+# Index Patterns
+kibana.index_pattern.default: "eco-dex-logs-*"
+
+# Performance
+optimize.usageTracking.enabled: false
+telemetry.enabled: false
+
+# CORS
+server.cors.enabled: true
+server.cors.allowCredentials: true
+server.cors.allowOrigin: ["*"]
+
+# SSL/TLS (Uncomment and configure for production)
+#server.ssl.enabled: true
+#server.ssl.certificate: /path/to/certificate.crt
+#server.ssl.key: /path/to/certificate.key
