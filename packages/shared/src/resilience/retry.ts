@@ -18,7 +18,7 @@ export async function withRetry<T>(
   options: Partial<RetryOptions> = {}
 ): Promise<T> {
   const retryOptions = { ...defaultOptions, ...options };
-  let lastError: Error;
+  let lastError: Error = new Error('Operation failed');
   let delay = retryOptions.initialDelay;
 
   for (let attempt = 1; attempt <= retryOptions.maxAttempts; attempt++) {
