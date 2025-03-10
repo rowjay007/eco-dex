@@ -19,18 +19,18 @@ jobs:
         with:
           node-version: '18'
           cache: 'npm'
-          cache-dependency-path: '**/package-lock.json'
       - name: Install Root Dependencies
-        run: npm install
-      - name: Install Service Dependencies
         run: |
-          cd services/${{ matrix.service }}
-          npm install
           npm ci
-      - name: Run Tests
+          npm install
+      - name: Install Service Dependencies
+        working-directory: services/${{ matrix.service }}
         run: |
-          cd services/${{ matrix.service }}
-          npm test
+          npm ci
+          npm install
+      - name: Run Tests
+        working-directory: services/${{ matrix.service }}
+        run: npm test
 
   build:
     needs: test
