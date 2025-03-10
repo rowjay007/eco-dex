@@ -4,6 +4,29 @@
 
 Eco-Dex is a modern, scalable e-commerce platform built using a microservices architecture. The platform provides a robust foundation for building and deploying e-commerce applications with features like user management, product catalog, shopping cart, order processing, payment integration, and real-time notifications.
 
+## System Design
+
+### High-Level Architecture
+- Microservices-based architecture for modularity and scalability
+- Event-driven communication using Apache Kafka
+- Distributed caching with Redis
+- Load balancing and API Gateway using Nginx
+- Container orchestration with Kubernetes
+
+### Scalability Considerations
+- Horizontal scaling of services based on load
+- Database sharding and replication
+- Caching strategies at multiple levels
+- Message queue for asynchronous processing
+- CDN integration for static assets
+
+### Security Measures
+- JWT-based authentication
+- Role-based access control (RBAC)
+- API rate limiting
+- Data encryption at rest and in transit
+- Regular security audits and penetration testing
+
 ## Architecture
 
 The platform consists of the following microservices:
@@ -27,6 +50,25 @@ The platform consists of the following microservices:
 - **Infrastructure as Code**: Terraform
 - **Monitoring**: Prometheus, Grafana, ELK Stack
 
+## Advanced Features
+
+### Search and Filtering
+- Elasticsearch integration for product search
+- Advanced filtering and faceted search
+- Search suggestions and autocomplete
+
+### Performance Optimization
+- Image optimization and lazy loading
+- Database query optimization
+- Response caching
+- Minification and bundling of assets
+
+### Analytics and Reporting
+- Real-time analytics dashboard
+- Sales and inventory reports
+- User behavior tracking
+- Performance metrics monitoring
+
 ## Getting Started
 
 ### Prerequisites
@@ -40,7 +82,7 @@ The platform consists of the following microservices:
 1. Clone the repository:
 
    ```bash
-   git clone https://github.com/yourusername/eco-dex.git
+   git clone https://github.com/rowjay007/eco-dex.git
    cd eco-dex
    ```
 
@@ -75,6 +117,10 @@ The platform uses a centralized `.env` file for base configuration, with service
 - `REDIS_*`: Redis configuration
 - `KAFKA_*`: Kafka configuration
 - Service-specific ports and configurations
+
+## Documentation
+
+For a detailed roadmap of the project, please visit: [Scalable E-commerce Platform Roadmap](https://roadmap.sh/projects/scalable-ecommerce-platform)
 
 ## Development
 
