@@ -1,0 +1,99 @@
+apiVersion: install.istio.io/v1alpha1
+kind: IstioOperator
+metadata:
+  namespace: istio-system
+spec:
+  profile: default
+  components:
+    egressGateways:
+    - name: istio-egressgateway
+      enabled: true
+    ingressGateways:
+    - name: istio-ingressgateway
+      enabled: true
+    pilot:
+      enabled: true
+  values:
+    global:
+      proxy:
+        autoInject: enabled
+      useMCP: false
+    grafana:
+      enabled: true
+    kiali:
+      enabled: true
+    prometheus:
+      enabled: true
+    tracing:
+      enabled: true
+      provider: jaeger
+    meshConfig:
+      enableTracing: true
+      defaultConfig:
+        tracing:
+          sampling: 100
+          zipkin:
+            address: jaeger-collector.observability:9411
+      accessLogFile: /dev/stdout
+      enableEnvoyAccessLogService: true
+      outboundTrafficPolicy:
+        mode: ALLOW_ANY
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: eco-dex-vs
+spec:
+  hosts:
+  - "*"
+  gateways:
+  - eco-dex-gateway
+  http:
+  - match:
+    - uri:
+        prefix: /api/users
+    route:
+    - destination:
+        host: user-service
+        port:
+          number: 3001
+  - match:
+    - uri:
+        prefix: /api/products
+    route:
+    - destination:
+        host: product-service
+        port:
+          number: 3002
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: Gateway
+metadata:
+  name: eco-dex-gateway
+spec:
+  selector:
+    istio: ingressgateway
+  servers:
+  - port:
+      number: 80
+      name: http
+      protocol: HTTP
+    hosts:
+    - "*"
+---
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: eco-dex-auth-policy
+  namespace: default
+spec:
+  selector:
+    matchLabels:
+      app: eco-dex
+  rules:
+  - from:
+    - source:
+        principals: ["cluster.local/ns/default/sa/eco-dex-sa"]
+    to:
+    - operation:
+        methods: ["GET", "POST", "PUT", "DELETE"]
