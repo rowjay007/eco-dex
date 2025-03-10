@@ -17,12 +17,10 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '22'
+          node-version: '20'
           cache: 'npm'
       - name: Install Root Dependencies
-        run: |
-          npm ci
-          npm install
+        run: npm ci
       - name: Install Service Dependencies
         working-directory: services/${{ matrix.service }}
         run: |
