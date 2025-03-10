@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { createClient } from '@upstash/redis';
+import { Redis } from '@upstash/redis';
 
 export interface RateLimiterOptions {
   windowMs: number;
@@ -8,8 +8,9 @@ export interface RateLimiterOptions {
 }
 
 export function createRateLimiter(options: RateLimiterOptions) {
-  const redis = createClient({
+  const redis = new Redis({
     url: process.env.REDIS_URL || 'redis://redis:6379',
+    token: process.env.REDIS_TOKEN || '',
   });
 
   const { windowMs, max, keyPrefix = 'rate-limit:' } = options;
