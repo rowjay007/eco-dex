@@ -21,11 +21,18 @@ jobs:
           cache: 'npm'
       - name: Install Root Dependencies
         run: npm ci
-      - name: Install Service Dependencies
+      - name: Cache Service Dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            services/${{ matrix.service }}/node_modules
+            services/${{ matrix.service }}/package-lock.json
+          key: ${{ runner.os }}-${{ matrix.service }}-node-${{ hashFiles('services/${{ matrix.service }}/package.json') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ matrix.service }}-node-
+      - name: Install Dependencies
         working-directory: services/${{ matrix.service }}
-        run: |
-          npm ci
-          npm install
+        run: npm install --package-lock
       - name: Run Tests
         working-directory: services/${{ matrix.service }}
         run: npm test
