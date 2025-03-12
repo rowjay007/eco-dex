@@ -1,0 +1,144 @@
+apiVersion: install.istio.io/v1alpha1
+kind: IstioOperator
+spec:
+  profile: default
+  components:
+    pilot:
+      k8s:
+        resources:
+          requests:
+            cpu: 500m
+            memory: 2048Mi
+    egressGateways:
+    - name: istio-egressgateway
+      enabled: true
+    ingressGateways:
+    - name: istio-ingressgateway
+      enabled: true
+  meshConfig:
+    enableTracing: true
+    defaultConfig:
+      tracing:
+        sampling: 100
+        zipkin:
+          address: zipkin.monitoring:9411
+    accessLogFile: /dev/stdout
+    enableAutoMtls: true
+  values:
+    global:
+      proxy:
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 200m
+            memory: 256Mi
+      mtls:
+        enabled: true
+    pilot:
+      traceSampling: 100.0
+    sidecarInjectorWebhook:
+      rewriteAppHTTPProbe: true
+---
+apiVersion: security.istio.io/v1beta1
+kind: PeerAuthentication
+metadata:
+  name: default
+  namespace: default
+spec:
+  mtls:
+    mode: STRICT
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: microservices-vs
+spec:
+  hosts:
+  - "*"
+  gateways:
+  - microservices-gateway
+  http:
+  - match:
+    - uri:
+        prefix: /users
+    route:
+    - destination:
+        host: user-service
+        port:
+          number: 3001
+  - match:
+    - uri:
+        prefix: /products
+    route:
+    - destination:
+        host: product-service
+        port:
+          number: 3002
+  - match:
+    - uri:
+        prefix: /cart
+    route:
+    - destination:
+        host: cart-service
+        port:
+          number: 3003
+  - match:
+    - uri:
+        prefix: /orders
+    route:
+    - destination:
+        host: order-service
+        port:
+          number: 3004
+  - match:
+    - uri:
+        prefix: /payments
+    route:
+    - destination:
+        host: payment-service
+        port:
+          number: 3005
+  - match:
+    - uri:
+        prefix: /notifications
+    route:
+    - destination:
+        host: notification-service
+        port:
+          number: 3006
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: Gateway
+metadata:
+  name: microservices-gateway
+spec:
+  selector:
+    istio: ingressgateway
+  servers:
+  - port:
+      number: 80
+      name: http
+      protocol: HTTP
+    hosts:
+    - "*"
+---
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: circuit-breaker
+spec:
+  host: "*"
+  trafficPolicy:
+    connectionPool:
+      tcp:
+        maxConnections: 100
+      http:
+        http1MaxPendingRequests: 1
+        maxRequestsPerConnection: 100
+    outlierDetection:
+      consecutive5xxErrors: 5
+      interval: 30s
+      baseEjectionTime: 30s
+      maxEjectionPercent: 100

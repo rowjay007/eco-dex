@@ -1,0 +1,56 @@
+groups:
+  - name: business_alerts
+    rules:
+      - alert: HighOrderFailureRate
+        expr: rate(order_failures_total[5m]) / rate(orders_total[5m]) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High order failure rate"
+          description: "Order failure rate is above 10% in the last 5 minutes"
+
+      - alert: LowInventoryLevel
+        expr: product_inventory_quantity < 10
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Low inventory for products"
+          description: "Product {{ $labels.product_id }} has low inventory (< 10 units)"
+
+      - alert: PaymentProcessingDelay
+        expr: rate(payment_processing_duration_seconds_sum[5m]) / rate(payment_processing_duration_seconds_count[5m]) > 10
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Payment processing delays"
+          description: "Payment processing is taking longer than 10 seconds"
+
+      - alert: HighCartAbandonmentRate
+        expr: rate(cart_abandoned_total[1h]) / rate(cart_created_total[1h]) > 0.4
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High cart abandonment rate"
+          description: "Cart abandonment rate is above 40% in the last hour"
+
+      - alert: UserAuthenticationFailures
+        expr: rate(user_authentication_failures_total[5m]) > 10
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High authentication failure rate"
+          description: "Multiple authentication failures detected in the last 5 minutes"
+
+      - alert: HighNotificationFailureRate
+        expr: rate(notification_failures_total[5m]) / rate(notifications_total[5m]) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High notification failure rate"
+          description: "Notification failure rate is above 5% in the last 5 minutes"
