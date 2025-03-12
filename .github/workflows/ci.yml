@@ -18,7 +18,6 @@ jobs:
             payment-service,
             notification-service,
           ]
-      # Prevent one service failure from canceling other jobs
       fail-fast: false
     steps:
       - uses: actions/checkout@v3
